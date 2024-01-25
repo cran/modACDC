@@ -4,7 +4,15 @@
 \alias{OSCA_singleValue}
 \title{OSCA_singleValue}
 \usage{
-OSCA_singleValue(df, externalVar, oscaPath)
+OSCA_singleValue(
+  df,
+  externalVar,
+  oscaPath,
+  remlAlg = 0,
+  maxRemlIt = 100,
+  numCovars = NULL,
+  catCovars = NULL
+)
 }
 \arguments{
 \item{df}{n x p dataframe or matrix of numeric -omics values with no ID column}
@@ -12,6 +20,14 @@ OSCA_singleValue(df, externalVar, oscaPath)
 \item{externalVar}{vector of length n of external variable values with no ID column}
 
 \item{oscaPath}{absolute path to OSCA software}
+
+\item{remlAlg}{which algorithm to run REML iterations in GCTA; 0 = average information (AI), 1 = Fisher-scoring, 2 = EM; default is 0 (AI)}
+
+\item{maxRemlIt}{the maximum number of REML iterations; default is 100}
+
+\item{numCovars}{n x c_n matrix of numerical covariates to adjust heritability model for; must be in same person order as fam file; default is NULL}
+
+\item{catCovars}{n x c_c matrix of categorical covariates to adjust heritability model for; must be in same person order as fam file; default is NULL}
 }
 \value{
 Row of OREML output containing percent variance explained in external data and standard error
@@ -44,7 +60,7 @@ Martin P, et al. Novel aspects of PPARalpha-mediated regulation of lipid and xen
 
 Millstein J, Battaglin F, Barrett M, Cao S, Zhang W, Stintzing S, et al. Partition: a surjective mapping approach for dimensionality reduction. \emph{Bioinformatics} \strong{36} (2019) 676–681. doi:10.1093/bioinformatics/ btz661.
 
-Queen K, Nguyen MN, Gilliland F, Chun S, Raby BA, Millstein J. ACDC: a general approach for detecting phenotype or exposure associated co-expression. (in press). \emph{Frontiers in Medicine} (2023).
+Queen K, Nguyen MN, Gilliland F, Chun S, Raby BA, Millstein J. ACDC: a general approach for detecting phenotype or exposure associated co-expression. \emph{Frontiers in Medicine} (2023) 10. doi:10.3389/fmed.2023.1118824.
 }
 \seealso{
 OSCA software - \url{https://yanglab.westlake.edu.cn/software/osca/}

@@ -27,7 +27,7 @@ ACDChighdim(
 \item{corrThreshold}{minimum correlation required between two features to be kept in the dataset; 0 \eqn{\leq} corrThreshold \eqn{\leq} 1; default value is 0.75}
 }
 \value{
-Data frame, designed to be row binded with output from other ACDC functions after removing the final column, with columns
+Tibble, designed to be row binded with output from other ACDC functions after removing the final column, with columns
 
 \describe{
 \item{moduleNum}{module identifier}
@@ -68,7 +68,7 @@ Benjamini Y, Hochberg Y. Controlling the false discovery rate: a practical and p
 
 Martin P, et al. Novel aspects of PPARalpha-mediated regulation of lipid and xenobiotic metabolism revealed through a nutrigenomic study. \emph{Hepatology}, in press, 2007.
 
-Queen K, Nguyen MN, Gilliland F, Chun S, Raby BA, Millstein J. ACDC: a general approach for detecting phenotype or exposure associated co-expression. (in press). \emph{Frontiers in Medicine} (2023).
+Queen K, Nguyen MN, Gilliland F, Chun S, Raby BA, Millstein J. ACDC: a general approach for detecting phenotype or exposure associated co-expression. \emph{Frontiers in Medicine} (2023) 10. doi:10.3389/fmed.2023.1118824..
 
 Widmann M. One-Dimensional CCA and SVD, and Their Relationship to Regression Maps. \emph{Journal of Climate} \strong{18} (2005) 2785–2792. doi:10.1175/jcli3424.1.
 }

@@ -34,7 +34,7 @@
 #' 
 #' Millstein J, Battaglin F, Barrett M, Cao S, Zhang W, Stintzing S, et al. Partition: a surjective mapping approach for dimensionality reduction. *Bioinformatics* **36** (2019) 676–681. doi:10.1093/bioinformatics/ btz661.
 #' 
-#' Queen K, Nguyen MN, Gilliland F, Chun S, Raby BA, Millstein J. ACDC: a general approach for detecting phenotype or exposure associated co-expression. (in press). *Frontiers in Medicine* (2023).
+#' Queen K, Nguyen MN, Gilliland F, Chun S, Raby BA, Millstein J. ACDC: a general approach for detecting phenotype or exposure associated co-expression. *Frontiers in Medicine* (2023) 10. doi:10.3389/fmed.2023.1118824.
 #' 
 #' @seealso OSCA software - \url{https://yanglab.westlake.edu.cn/software/osca/}
 #' 
@@ -45,29 +45,37 @@
 OSCA_parPlot <- function(df, externalVarName = "", dataName = "") {
   
   # to remove "no visible binding" note
-  InformationLost <- SE_Observed <- VarianceExplained_Observed <- VarianceExplained_Permuted <- NULL
+  InformationLost <- VEObs_upper <- VEObs_lower <- VarianceExplained_Observed <- VarianceExplained_Permuted <- NULL
+  
+  # create confidence bounds
+  i = 0
+  for (i in 1:nrow(df)) {
+    df$VEObs_upper[i] <- min(1, (df$VarianceExplained_Observed[i] + df$SE_Observed[i]))
+    df$VEObs_lower[i] <- max(0, (df$VarianceExplained_Observed[i] - df$SE_Observed[i]))
+  }
   
   # create and return graph
-  return(ggplot(data=df) +
-           geom_line(aes(x = InformationLost, y = VarianceExplained_Observed, color="Observed"), size=0.75) +
-           geom_pointrange(aes(x = InformationLost, y = VarianceExplained_Observed,
-                               ymin = VarianceExplained_Observed-SE_Observed, 
-                               ymax = VarianceExplained_Observed+SE_Observed,
-                               color = "Observed")) +
-           geom_point(aes(x = InformationLost, y = VarianceExplained_Permuted, color="Permuted"), size=2) +
-           geom_line(aes(x = InformationLost, y = VarianceExplained_Permuted, color="Permuted"), size=0.75) +
-           xlab("Information Lost") +
-           ylab("Percent Variance Explained") +
-           ggtitle(paste0("Percent Variance Explained in ", 
-                          externalVarName, "\n by ", dataName)) +
-           scale_x_continuous(breaks = seq(0, 100, by=25),
-                              sec.axis = sec_axis(~ .,
-                                                  labels = round(df$PercentReduction,0),
-                                                  breaks = df$InformationLost,
-                                                  name = "Percent Reduction")) +
-           scale_color_manual(name = externalVarName,
-                              values = c( "Observed" = "steelblue", "Permuted" = "darkred"),
-                              labels = c("Observed", "Permuted")) +
-           theme_bw(base_family = "Times") +
-           theme(plot.title = element_text(face="bold", hjust = 0.5)))
+  ggplot(data=df) +
+     geom_line(aes(x = InformationLost, y = VarianceExplained_Observed, color="Observed"), size=0.75) +
+     geom_pointrange(aes(x = InformationLost, y = VarianceExplained_Observed,
+                         ymin = VEObs_lower, 
+                         ymax = VEObs_upper,
+                         color = "Observed")) +
+     geom_point(aes(x = InformationLost, y = VarianceExplained_Permuted, color = "Permuted"), size=2) +
+     geom_line(aes(x = InformationLost, y = VarianceExplained_Permuted, color = "Permuted"), size=0.75) +
+     ylim(c(0,1)) + 
+     xlab("Information Lost") +
+     ylab("Percent Variance Explained") +
+     ggtitle(paste0("Percent Variance Explained in ", 
+                    externalVarName, "\n by ", dataName)) +
+     scale_x_continuous(breaks = seq(0, 100, by=25),
+                        sec.axis = sec_axis(~ .,
+                                            labels = round(df$PercentReduction, 0),
+                                            breaks = df$InformationLost,
+                                            name = "Percent Reduction")) +
+     scale_color_manual(name = externalVarName,
+                        values = c( "Observed" = "steelblue", "Permuted" = "darkred"),
+                        labels = c("Observed", "Permuted")) +
+     theme_bw(base_family = "Times") +
+     theme(plot.title = element_text(face="bold", hjust = 0.5))
 }

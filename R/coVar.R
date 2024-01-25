@@ -18,7 +18,7 @@
 #' @references 
 #' Martin P, et al. Novel aspects of PPARalpha-mediated regulation of lipid and xenobiotic metabolism revealed through a nutrigenomic study. *Hepatology*, in press, 2007.
 #' 
-#' Queen K, Nguyen MN, Gilliland F, Chun S, Raby BA, Millstein J. ACDC: a general approach for detecting phenotype or exposure associated co-expression. (in press). *Frontiers in Medicine* (2023).
+#' Queen K, Nguyen MN, Gilliland F, Chun S, Raby BA, Millstein J. ACDC: a general approach for detecting phenotype or exposure associated co-expression. *Frontiers in Medicine* (2023) 10. doi:10.3389/fmed.2023.1118824.
 #' 
 #' @examples
 #' #load CCA package for example dataset
@@ -33,12 +33,5 @@
 #' 
 #' @export
 coVar <- function(dataPair, fullData) {
-  
-  # helper function to calculate covariance
-  coVar_calc <- function(x) {
-    return((x[dataPair[1]]-mean(fullData[,dataPair[1]]))*(x[dataPair[2]]-mean(fullData[,dataPair[2]])))
-  }
-  
-  # calculate dataPair covariance for each sample (row) in fullData 
-  return(as.numeric(apply(fullData, MARGIN = 1, FUN = coVar_calc)))
+  (fullData[,dataPair[1]] - mean(fullData[,dataPair[1]])) * (fullData[,dataPair[2]] - mean(fullData[,dataPair[2]]))
 }

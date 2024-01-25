@@ -7,7 +7,7 @@
 #' @param externalVar data frame, matrix, or vector containing external variable data to be used for CCA, rows are samples; all elements must be numeric
 #' @param identifierList optional row vector of identifiers, of the same length and order, corresponding to columns in fullData (ex: HUGO symbols for genes); default value is the column names from fullData
 #' @param numNodes number of available compute nodes for parallelization; default is 1
-#' @return Data frame, sorted by ascending BH FDR value, with columns 
+#' @return Tibble, sorted by ascending BH FDR value, with columns 
 #' 
 #' \describe{
 #' \item{moduleNum}{module identifier}
@@ -42,23 +42,26 @@
 #' 
 #' Millstein J, Battaglin F, Barrett M, Cao S, Zhang W, Stintzing S, et al. Partition: a surjective mapping approach for dimensionality reduction. *Bioinformatics* **36** (2019) 676–681. doi:10.1093/bioinformatics/ btz661.
 #' 
-#' Queen K, Nguyen MN, Gilliland F, Chun S, Raby BA, Millstein J. ACDC: a general approach for detecting phenotype or exposure associated co-expression. (in press). *Frontiers in Medicine* (2023).
+#' Queen K, Nguyen MN, Gilliland F, Chun S, Raby BA, Millstein J. ACDC: a general approach for detecting phenotype or exposure associated co-expression. *Frontiers in Medicine* (2023) 10. doi:10.3389/fmed.2023.1118824..
 #' 
 #' Widmann M. One-Dimensional CCA and SVD, and Their Relationship to Regression Maps. *Journal of Climate* **18** (2005) 2785–2792. doi:10.1175/jcli3424.1.
 #' 
 #' @author Katelyn Queen, \email{kjqueen@@usc.edu}
 #' 
 #' @export
-#' @import partition
-#' @import CCA
-#' @import CCP
-#' @import utils
 #' @import stats
-#' @import tidyr
+#' @import CCP
 #' @import foreach
-#' @import doParallel
-#' @import parallel
-ACDC <- function(fullData, ILC = 0.50, externalVar, identifierList = colnames(fullData), numNodes = 1) {
+ACDC <- function(fullData, 
+                 ILC = 0.50, 
+                 externalVar, 
+                 identifierList = colnames(fullData), 
+                 numNodes = 1) {
+  
+  # check correct dimensions of input
+  if(nrow(fullData) != nrow(externalVar)) stop("fullData and externalVar must have the same number of rows.")
+  if(ncol(fullData) != length(identifierList)) stop("identifierList must be the same length as the number of columns in fullData.")
+  if(0 > ILC | 1 < ILC) stop("ILC must be between 0 and 1.")
   
   # to remove "no visible binding" note
   moduleNum <- CCA_pval <- NULL
@@ -77,29 +80,29 @@ ACDC <- function(fullData, ILC = 0.50, externalVar, identifierList = colnames(fu
   externalVar <- as.data.frame(externalVar)
   if(is.null(identifierList)) identifierList <- colnames(fullData)
   
-  # check correct dimensions of input
-  if(nrow(fullData) != nrow(externalVar)) stop("fullData and externalVar must have the same number of rows.")
-  if(ncol(fullData) != length(identifierList)) stop("identifierList must be the same length as the number of columns in fullData.")
-  if(0 > ILC | 1 < ILC) stop("ILC must be between 0 and 1.")
-  
   # iteration counter
   i = 0
   
   # partition and find modules
-  part    <- partition(fullData, threshold = ILC)
+  if(dim(fullData)[[2]] > 4000) {
+    part <- partition::super_partition(fullData, threshold = ILC)
+  } else {
+    part <- partition::partition(fullData, threshold = ILC)
+  }
   modules <- part$mapping_key[which(grepl("reduced_var_", part$mapping_key$variable)), ]$indices
   
   # stop if no modules identified
   if(length(modules) == 0) stop("No modules identified. Try a smaller ILC.")
   
   # parallel set up
-  my.cluster <- parallel::makeCluster(numNodes)
+  numNodes   <- min(numNodes, length(modules))
+  my.cluster <- parallel::makeCluster(numNodes, outfile = "")
   doParallel::registerDoParallel(my.cluster)
   
   # for each module...
-  results <- foreach (i = 1:length(modules),
+  results <- foreach::foreach (i = 1:length(modules),
                       .combine = rbind,
-                      .packages = c("CCA", "CCP"),
+                      .packages = c("stats", "CCP"),
                       .export = c("coVar")) %dopar% {
                         # vector to store results
                         tmp <- c(i)
@@ -125,16 +128,16 @@ ACDC <- function(fullData, ILC = 0.50, externalVar, identifierList = colnames(fu
                           
                           # run CCA, save out correlation coefficients and wilks-lambda test
                           ## CCA_corr and CCA_pval
-                          cca_results <- cancor(connectivity, externalVar, ycenter = F)
+                          cca_results <- stats::cancor(connectivity, externalVar, ycenter = F)
                           tmp[4]      <- list(cca_results$cor)
                           if (ncol(connectivity) > 1 | ncol(externalVar) > 1) {
-                            tmp[5]  <- hush(p.asym(rho = cca_results$cor,
+                            tmp[5]  <- hush(CCP::p.asym(rho = cca_results$cor,
                                                    N = dim(connectivity)[1],
                                                    p = dim(connectivity)[2],
                                                    q = dim(externalVar)[2],
                                                    tstat = "Wilks")$p.value[1])
                           } else { ## if both connectivity and externalVar are one dimensional, use simple, one-tailed correlation test
-                            tmp[5] <- pt(as.numeric(cca_results$cor)*(sqrt(length(modules)-2/(1-as.numeric(cca_results$cor)^2))), 
+                            tmp[5] <- stats::pt(as.numeric(cca_results$cor)*(sqrt(length(modules)-2/(1-as.numeric(cca_results$cor)^2))), 
                                          df = length(modules)-2, 
                                          lower.tail = F)
                           }
@@ -146,15 +149,17 @@ ACDC <- function(fullData, ILC = 0.50, externalVar, identifierList = colnames(fu
   parallel::stopCluster(cl = my.cluster)
   
   # column names for results df
-  results           <- as.data.frame(results)
+  results           <- data.frame(results)
   colnames(results) <- c("moduleNum", "colNames", "features", "CCA_corr", "CCA_pval")
+  rownames(results) <- results$moduleNum
   
   # unnest columns that don't need to be lists
-  results <- unnest(results, c(moduleNum, CCA_pval))
-  
+  results <- tidyr::unnest(results, c(moduleNum, CCA_pval))
+
   # FDR
   results            <- results[order(results$CCA_pval), ]
   results$BHFDR_qval <- p.adjust(results$CCA_pval, method="BH")
   
-  return(results)
+  # to return
+  results
 }

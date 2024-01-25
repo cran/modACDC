@@ -9,8 +9,13 @@ OSCA_par(
   externalVar,
   ILCincrement = 0.05,
   oscaPath,
+  remlAlg = 0,
+  maxRemlIt = 100,
+  numCovars = NULL,
+  catCovars = NULL,
+  permute = TRUE,
   numNodes = 1,
-  permute = TRUE
+  verbose = TRUE
 )
 }
 \arguments{
@@ -22,12 +27,22 @@ OSCA_par(
 
 \item{oscaPath}{absolute path to OSCA software}
 
-\item{numNodes}{number of available compute nodes for parallelization; default is 1}
+\item{remlAlg}{which algorithm to run REML iterations in GCTA; 0 = average information (AI), 1 = Fisher-scoring, 2 = EM; default is 0 (AI)}
+
+\item{maxRemlIt}{the maximum number of REML iterations; default is 100}
+
+\item{numCovars}{n x c_n matrix of numerical covariates to adjust heritability model for; must be in same person order as externalVar; default is NULL}
+
+\item{catCovars}{n x c_c matrix of categorical covariates to adjust heritability model for; must be in same person order as externalVar; default is NULL}
 
 \item{permute}{boolean value for whether or not to calculate values for a random permutation of the external variable; default is true}
+
+\item{numNodes}{number of available compute nodes for parallelization; default is 1}
+
+\item{verbose}{logical for whether or not to display progress updates; default is TRUE}
 }
 \value{
-Data frame with columns
+Tibble with columns
 
 \describe{
 \item{ILC}{the information loss criterion used for that iteration}
@@ -47,7 +62,7 @@ OmicS-data-based Complex trait Analysis (OSCA) is a suite of C++ functions. In o
 
 Here, we use OSCA's Omics Restricted Maximum Likelihood (OREML) method to estimate the percent of variance in an external phenotype that can be explained by an omics profile, akin to heritability estimates in GWAS. OREML is called twice for each ILC tested if permutations are included.
 
-Dimension reduction is done with Partition, an agglomerative data reduction method which performs both feature condensation and extraction based on a user provided information loss criterion (ILC). Feature condensation into modules are only accepted if the intraclass correlation between the features is at least the ILC.
+Dimension reduction is done with Partition, an agglomerative data reduction method which performs both feature condensation and extraction based on a user provided information loss criterion (ILC). Feature condensation into modules are only accepted if the intraclass correlation between the features is at least the ILC. The superPartition function is called if the gene expression dataset contains more than 4,000 features.
 }
 \examples{
 #load CCA package for example dataset
@@ -70,7 +85,7 @@ Martin P, et al. Novel aspects of PPARalpha-mediated regulation of lipid and xen
 
 Millstein J, Battaglin F, Barrett M, Cao S, Zhang W, Stintzing S, et al. Partition: a surjective mapping approach for dimensionality reduction. \emph{Bioinformatics} \strong{36} (2019) 676–681. doi:10.1093/bioinformatics/ btz661.
 
-Queen K, Nguyen MN, Gilliland F, Chun S, Raby BA, Millstein J. ACDC: a general approach for detecting phenotype or exposure associated co-expression. (in press). \emph{Frontiers in Medicine} (2023).
+Queen K, Nguyen MN, Gilliland F, Chun S, Raby BA, Millstein J. ACDC: a general approach for detecting phenotype or exposure associated co-expression. \emph{Frontiers in Medicine} (2023) 10. doi:10.3389/fmed.2023.1118824.
 }
 \seealso{
 OSCA software - \url{https://yanglab.westlake.edu.cn/software/osca/}
